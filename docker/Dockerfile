@@ -13,13 +13,11 @@ ARG CUDA_VERSION=13.0.2
 ARG PYTHON_VERSION=3.12
 ARG UBUNTU_VERSION=22.04
 
-ARG FINAL_BASE_IMAGE=nvidia/cuda:${CUDA_VERSION}-base-ubuntu${UBUNTU_VERSION}
-
 ARG VLLM_VERSION=""
 ARG LLAMA_SWAP_VERSION=latest
 
 #################### RUNTIME STAGE ####################
-FROM ${FINAL_BASE_IMAGE} AS runtime
+FROM nvidia/cuda:${CUDA_VERSION}-base-ubuntu${UBUNTU_VERSION} AS runtime
 
 ARG CUDA_VERSION
 ARG VLLM_VERSION
@@ -68,12 +66,6 @@ RUN mkdir -p /install/bin \
     && rm /tmp/llama-swap.tar.gz \
     && chmod +x /install/bin/llama-swap \
     && echo "${LS_VER}" > /install/llama-swap-version
-
-# CUDA stub drivers for container compatibility
-COPY --from=${FINAL_BASE_IMAGE} /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so || true
-COPY --from=${FINAL_BASE_IMAGE} /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 || true
-
-RUN ldconfig || true
 
 # Create directories
 RUN mkdir -p /etc/llama-swap/config \
