@@ -1,0 +1,89 @@
+name: Build and Push Docker Image
+
+on:
+  schedule:
+    # Run daily at 03:00 UTC (11:00 AM CST)
+    - cron: '0 3 * * *'
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-build.yml'
+  workflow_dispatch:
+    inputs:
+      vllm_version:
+        description: 'vLLM version to install (leave empty for latest)'
+        required: false
+        default: ''
+      llama_swap_version:
+        description: 'llama-swap version (leave empty for latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=sha,prefix=,suffix=,format=short
+
+      - name: Get latest vLLM version
+        id: get_vllm_version
+        run: |
+          if [ -n "${{ github.event.inputs.vllm_version }}" ]; then
+            echo "VLLM_VERSION=${{ github.event.inputs.vllm_version }}" >> $GITHUB_OUTPUT
+          else
+            # Get latest vLLM version from PyPI
+            VLLM_VER=$(curl -s https://pypi.org/pypi/vllm/json | jq -r '.info.version')
+            echo "VLLM_VERSION=${VLLM_VER}" >> $GITHUB_OUTPUT
+            echo "Latest vLLM version: ${VLLM_VER}"
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VLLM_VERSION=${{ steps.get_vllm_version.outputs.VLLM_VERSION }}
+            LLAMA_SWAP_VERSION=${{ github.event.inputs.llama_swap_version || 'latest' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: echo "Image digest - ${{ steps.build-push.outputs.digest }}"

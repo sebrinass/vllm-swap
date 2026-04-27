@@ -1,0 +1,55 @@
+# vllm-swap example configuration
+# Place this file at /etc/llama-swap/config/config.yaml in the container
+#
+# vLLM models are started via `vllm serve` command.
+# llama-swap will route requests to the appropriate model based on the model name.
+
+healthCheckTimeout: 300
+logRequests: true
+
+models:
+  # Example: Qwen 2.5 14B model
+  "qwen-14b":
+    ttl: 600
+    cmd: >
+      vllm serve /models/Qwen2.5-14B-Instruct
+      --port ${PORT}
+      --tensor-parallel-size 1
+      --max-model-len 32768
+
+  # Example: Qwen 2.5 7B model
+  "qwen-7b":
+    ttl: 600
+    cmd: >
+      vllm serve /models/Qwen2.5-7B-Instruct
+      --port ${PORT}
+      --tensor-parallel-size 1
+      --max-model-len 32768
+
+  # Example: DeepSeek R1 32B (Q4 GGUF loaded via vLLM)
+  "deepseek-32b":
+    ttl: 600
+    cmd: >
+      vllm serve /models/DeepSeek-R1-Distill-Qwen-32B
+      --port ${PORT}
+      --tensor-parallel-size 1
+      --max-model-len 65536
+
+  # Example: Gemma 4 27B
+  "gemma-27b":
+    ttl: 600
+    cmd: >
+      vllm serve /models/gemma-4-27b-it
+      --port ${PORT}
+      --tensor-parallel-size 1
+      --max-model-len 131072
+
+  # Example: Multi-GPU setup (adjust tensor-parallel-size)
+  "qwen-72b":
+    ttl: 900
+    cmd: >
+      vllm serve /models/Qwen2.5-72B-Instruct
+      --port ${PORT}
+      --tensor-parallel-size 2
+      --max-model-len 32768
+      --gpu-memory-utilization 0.95
