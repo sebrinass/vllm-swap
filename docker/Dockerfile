@@ -36,6 +36,7 @@ RUN apt-get update -y \
         curl \
         ca-certificates \
         gcc \
+        libc6-dev \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install --no-cache-dir pip --upgrade
 
