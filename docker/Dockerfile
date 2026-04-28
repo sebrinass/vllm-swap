@@ -35,6 +35,7 @@ RUN apt-get update -y \
         python3-pip \
         curl \
         ca-certificates \
+        gcc \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install --no-cache-dir pip --upgrade
 
