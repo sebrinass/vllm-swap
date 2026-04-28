@@ -46,7 +46,7 @@ RUN if [ -n "${VLLM_VERSION}" ]; then \
     fi
 
 # Download and install llama-swap release binary
-RUN mkdir -p /install/bin \
+RUN mkdir -p /usr/local/bin \
     && ARCH=$(uname -m) \
     && case "$ARCH" in \
         x86_64) ARCH="amd64" ;; \
@@ -62,10 +62,10 @@ RUN mkdir -p /install/bin \
     && echo "Downloading llama-swap v${LS_VER}" \
     && curl -fSL -o /tmp/llama-swap.tar.gz \
         "https://github.com/mostlygeek/llama-swap/releases/download/v${LS_VER}/llama-swap_${LS_VER}_linux_${ARCH}.tar.gz" \
-    && tar -xzf /tmp/llama-swap.tar.gz -C /install/bin/ \
+    && tar -xzf /tmp/llama-swap.tar.gz -C /usr/local/bin/ \
     && rm /tmp/llama-swap.tar.gz \
-    && chmod +x /install/bin/llama-swap \
-    && echo "${LS_VER}" > /install/llama-swap-version
+    && chmod +x /usr/local/bin/llama-swap \
+    && echo "${LS_VER}" > /usr/local/llama-swap-version
 
 # Create directories
 RUN mkdir -p /etc/llama-swap/config \
@@ -77,7 +77,7 @@ COPY config.example.yaml /etc/llama-swap/config/config.yaml
 
 # Version tracking
 RUN echo "vllm: $(python3 -c 'import vllm; print(vllm.__version__)' 2>/dev/null || echo 'unknown')" > /versions.txt \
-    && echo "llama-swap: $(cat /install/llama-swap-version 2>/dev/null || echo 'unknown')" >> /versions.txt \
+    && echo "llama-swap: $(cat /usr/local/llama-swap-version 2>/dev/null || echo 'unknown')" >> /versions.txt \
     && echo "cuda: ${CUDA_VERSION}" >> /versions.txt \
     && echo "build_timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /versions.txt
 
